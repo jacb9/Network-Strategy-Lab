@@ -1,0 +1,517 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Network Strategy Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: third lab in the series. Three stacked parts in the paper's order of argument: the variance argument (toy model), a live alliance network on the knowledge torus, and the cross-section vs. strategy sweep. Each part pairs a short framing column with its working area; one column on phones. */
+:root{
+  --bg:#F3F2F4; --surface:#FFFFFF; --ink:#1E1A22; --muted:#5F5866; --line:#DCD8E0; --soft:#EFE7EF;
+  --accent:#7A2E5B; --cs:#C27012; --st:#2F5D9E; --big:#C2361E;
+  --r-lo:#E6DDE6; --r-hi:#5E1F47; --edge:#8C8394;
+  --l1:#3C3540; --l2:#8E6A93; --l3:#B9A4BF;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#141116; --surface:#1D1920; --ink:#ECE7EF; --muted:#A79FAE; --line:#332D38; --soft:#2B2130;
+  --accent:#E59AC6; --cs:#F2A54A; --st:#86B0F2; --big:#FF7A5E;
+  --r-lo:#3A3140; --r-hi:#F5B8DB; --edge:#8F8698;
+  --l1:#ECE7EF; --l2:#C49BCB; --l3:#7E6C86; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141116; --surface:#1D1920; --ink:#ECE7EF; --muted:#A79FAE; --line:#332D38; --soft:#2B2130;
+  --accent:#E59AC6; --cs:#F2A54A; --st:#86B0F2; --big:#FF7A5E;
+  --r-lo:#3A3140; --r-hi:#F5B8DB; --edge:#8F8698;
+  --l1:#ECE7EF; --l2:#C49BCB; --l3:#7E6C86; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{padding-block:28px 8px}
+.cite{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
+h1{font-family:var(--f-display);font-weight:600;font-size:clamp(30px,4.4vw,44px);line-height:1.08;margin:6px 0 10px;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:clamp(22px,2.6vw,27px);margin:0 0 8px;line-height:1.15;text-wrap:balance}
+h2 .n{font-family:var(--f-mono);font-size:14px;color:var(--accent);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.04em}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:600}
+.lede{max-width:72ch;margin:0}
+p{max-width:68ch}
+.part{padding-block:30px;border-top:1px solid var(--line)}
+.part:first-of-type{border-top:0}
+.grid{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.frame p{font-size:14.5px;margin:0 0 12px}
+.look{background:var(--soft);border-radius:8px;padding:12px 14px;font-size:14px}
+.look b{font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+canvas{display:block;width:100%;touch-action:manipulation}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grow{flex:1;min-width:150px}
+.btn{font:600 14px var(--f-body);padding:8px 14px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+label{font-size:13px;font-weight:500}
+.val{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:500 13px var(--f-body);padding:6px 11px;border:0;background:transparent;color:var(--ink);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.watch{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.watch{grid-template-columns:minmax(0,1fr)}}
+#torus{aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:6px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:12px;color:var(--muted)}
+.event{font-size:13px;min-height:2.6em;padding:8px 10px;border-radius:6px;background:var(--soft)}
+.event.bigev{background:color-mix(in srgb,var(--big) 16%,var(--surface));}
+.ts canvas{height:92px}
+#cToy{height:260px}#cFig1{height:150px}
+#cMain,#cVar{height:270px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--st) 18%,var(--surface));color:var(--st)}
+.tag.no{background:color-mix(in srgb,var(--big) 16%,var(--surface));color:var(--big)}
+.tag.flat{background:var(--soft);color:var(--muted)}
+.progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress>div{height:100%;width:0;background:var(--accent)}
+.fine{font-size:13px;color:var(--muted);max-width:95ch}
+.fine b{color:var(--ink)}
+footer{padding-block:10px 40px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="cite">Baum, Cowan &amp; Jonard (2014) · “Does Evidence of Network Effects on Firm Performance in Pooled Cross-Section Support Prescriptions for Network Strategy?” · Strategic Management Journal 35: 652–667</div>
+  <h1>Network Strategy Lab</h1>
+  <p class="lede">Studies of alliance networks often find that firms in open, brokering positions outperform firms in closed, dense ones, and conclude that firms should seek open positions. This paper asks whether that inference holds. If open positions raise the <em>variance</em> of performance rather than its mean, they will look good in any snapshot of top performers and still fail to pay over a firm’s history. The three parts below follow the paper’s argument: a stripped-down version of the variance logic, the alliance network model itself, and the comparison of cross-section with long-run strategy.</p>
+</header>
+
+<!-- PART 1 -->
+<section class="part" id="variance">
+  <div class="grid">
+    <div class="frame">
+      <h2><span class="n">Part 1</span>Why a snapshot can mislead</h2>
+      <p>Before building the network model, the paper makes its point with a much simpler one. A hundred firms each carry a fixed characteristic <i>c</i> between 1 and <i>C</i>. Each period one firm is drawn and paid either a high amount (1.01<i>c</i>) or a low one (0.01<i>c</i>). The odds of the high payoff fall as <i>c</i> rises, exactly enough that every firm expects to earn 1 per draw. Only the variance differs.</p>
+      <p>Each dot is one simulated population. A <b style="color:var(--cs)">cross-section</b> correlation pairs each individual payoff with the characteristic of the firm that received it. A <b style="color:var(--st)">long-run</b> correlation pairs each firm’s total over 2,000 periods with its characteristic.</p>
+      <div class="look"><b>What to look for.</b> As the population distribution becomes more right-skewed, the highest payoffs at any moment belong more and more to high-variance firms, so the cross-section correlation climbs. Over the long run, every firm earns the same, and the correlation sits near zero.</div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Correlation of payoff with c, by skewness</h3>
+          <button class="btn ghost" id="toyRerun">Draw 150 new populations</button></div>
+        <div class="legend"><span><svg width="12" height="12" aria-hidden="true"><path d="M2 6h8M6 2v8" stroke="var(--cs)" stroke-width="2"/></svg>Cross-section</span><span><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="3.5" fill="var(--st)"/></svg>Long run</span><span class="hint">Rank correlations; lines are least-squares fits. Replicates the paper’s Figure 2.</span></div>
+        <canvas id="cToy" aria-label="Cross-section and long-run correlations against skewness for the simple model"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Same mean, more skew (the paper’s Figure 1)</h3>
+        <canvas id="cFig1" aria-label="Three lognormal distributions with mean 1 and increasing skew"></canvas>
+        <div class="legend" id="fig1Legend"></div>
+        <p class="hint" style="margin:6px 0 0">Holding the mean at 1 (vertical line), more skew fattens the far right tail and also piles mass near zero. A high-variance firm gets more chances at the top and more exposure to the bottom.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PART 2 -->
+<section class="part" id="industry">
+  <div class="grid">
+    <div class="frame">
+      <h2><span class="n">Part 2</span>Watch an alliance network evolve</h2>
+      <p>A hundred firms sit in a two-dimensional knowledge space that wraps around at the edges (a torus). Two firms ally when both expect the alliance to pay, which happens when their knowledge is neither too similar nor too different; the optimal distance is <i>d*</i> = 0.025. Allied firms learn from each other and drift together.</p>
+      <p>Alliances occasionally produce an innovation. It forces every other firm to redeploy its knowledge, moving it a random distance in a random direction, and firms closer to the innovator move further. The innovator earns the total displacement it causes.</p>
+      <p><b><i>C</i> sets the innovation regime.</b> An innovation has size <i>H</i> = 1.01<i>C</i> with small probability, otherwise <i>L</i> = 0.01<i>C</i>; the expected size is always 1. Low <i>C</i>: steady, comparable innovations, an exploitation regime. High <i>C</i>: mostly trivial innovations and the occasional huge one, an exploration regime.</p>
+      <div class="look"><b>What to look for.</b> Compare <i>C</i> = 5 with <i>C</i> = 20 (the paper’s Figures 3 and 4). At low <i>C</i>, degree and clustering bounce around constantly. At high <i>C</i>, learning dominates for long stretches, so clusters tighten and degree and clustering climb, until a rare large innovation (marked in red) scatters firms and knocks both down.</div>
+    </div>
+    <div class="panel">
+      <div class="row" style="margin-bottom:12px">
+        <div class="grow"><label for="inC">Innovation regime, C <span class="val" id="cVal"></span></label><input type="range" id="inC" min="1" max="30" step="1" value="20"></div>
+        <div class="seg" role="group" aria-label="Preset regimes"><button data-c="5">C = 5</button><button data-c="20">C = 20</button></div>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" id="play">Play</button>
+        <button class="btn ghost" id="reset">New industry</button>
+        <select id="speed" aria-label="Speed"><option value="1">1 period / frame</option><option value="4" selected>4 periods / frame</option><option value="16">16 periods / frame</option></select>
+        <select id="colorBy" aria-label="Colour firms by"><option value="bet">Colour: betweenness (open)</option><option value="con">Colour: constraint (closed)</option><option value="profit">Colour: total profit</option></select>
+      </div>
+      <div class="watch">
+        <div>
+          <canvas id="torus" aria-label="Firms in knowledge space with their alliances"></canvas>
+          <div class="legend" style="margin-top:6px"><span><span style="width:60px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--r-lo),var(--r-hi))"></span><span id="rampLbl">low → high betweenness</span></span><span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--big)" stroke-width="2"/></svg>innovator</span></div>
+        </div>
+        <div class="stack" style="gap:12px">
+          <div class="stats">
+            <div class="stat"><div class="k">Period</div><div class="v" id="sT">0</div></div>
+            <div class="stat"><div class="k">Avg degree</div><div class="v" id="sDeg">–</div></div>
+            <div class="stat"><div class="k">Clustering</div><div class="v" id="sCl">–</div></div>
+            <div class="stat"><div class="k">Components</div><div class="v" id="sComp">–</div></div>
+            <div class="stat"><div class="k">Innovations / period</div><div class="v" id="sRate">–</div></div>
+            <div class="stat"><div class="k">Skew of profits</div><div class="v" id="sSkew">–</div></div>
+          </div>
+          <div class="event" id="event">Press Play to start the clock.</div>
+          <div class="ts"><h3 style="margin:0 0 2px">Average degree</h3><canvas id="cDeg" aria-label="Average degree over the last 500 periods"></canvas></div>
+          <div class="ts"><h3 style="margin:0 0 2px">Average clustering</h3><canvas id="cCl" aria-label="Average clustering over the last 500 periods"></canvas></div>
+          <p class="hint" style="margin:0">Last 500 periods. Red ticks mark large innovations (size <i>H</i>).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PART 3 -->
+<section class="part" id="strategy">
+  <div class="grid">
+    <div class="frame">
+      <h2><span class="n">Part 3</span>Cross-section versus strategy</h2>
+      <p>Each dot is one industry run with <i>C</i> drawn at random. Two correlations come out of every run.</p>
+      <p>The <b style="color:var(--cs)">cross-section</b> correlation is innovation-centric, like a pooled study: across all innovations, the innovator’s profit against its network position at that moment.</p>
+      <p>The <b style="color:var(--st)">strategy</b> correlation is firm-centric: across firms, each firm’s total profit over the run against its average position over the run. This is the question a firm choosing a network strategy needs answered.</p>
+      <div class="look"><b>What to look for.</b> The paper finds that open positions (high betweenness) go with higher profit in cross-section, more so as skew rises, while the strategy correlation falls with skew and turns negative. Constraint, the measure of closure, reverses both. The table compares each slope with the paper’s Table 1.</div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <div class="seg" id="measure" role="group" aria-label="Network position measure"><button data-m="B" aria-pressed="true">Betweenness (open)</button><button data-m="K">Constraint (closed)</button></div>
+          <span class="val" id="nRuns"></span>
+        </div>
+        <div class="legend"><span><svg width="12" height="12" aria-hidden="true"><path d="M2 6h8M6 2v8" stroke="var(--cs)" stroke-width="2"/></svg>Cross-section</span><span><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="3.5" fill="var(--st)"/></svg>Strategy</span><span class="hint">Spearman correlations; lines are least-squares fits (Figures 5 and 6).</span></div>
+        <h3 style="margin:10px 0 0" id="mainTitle">Correlation of betweenness with profit, by skewness of profits</h3>
+        <canvas id="cMain" aria-label="Correlation of network position with profit by skewness"></canvas>
+        <div class="tablewrap" style="margin-top:10px"><table id="tbl1"></table></div>
+      </div>
+      <div class="panel">
+        <h3 id="varTitle">Correlation of firm profit variance with betweenness</h3>
+        <canvas id="cVar" aria-label="Correlation of firm profit variance with network position by skewness"></canvas>
+        <p class="hint" style="margin:6px 0 0">The mechanism check (Figure 7). In the paper, open positions raise a firm’s profit variance and closed positions lower it at low skew, with both correlations fading toward zero above a skew of about 2.5. This version does not reproduce the low-skew effect clearly; see the note at the bottom of the page. The line is a running mean across skew.</p>
+      </div>
+      <div class="panel">
+        <h3>Add your own runs</h3>
+        <div class="row">
+          <label for="inRuns" class="hint" style="font-weight:500">Runs</label><select id="inRuns"><option>10</option><option selected>30</option><option>100</option></select>
+          <label for="inT" class="hint" style="font-weight:500">Periods each</label><select id="inT"><option value="2000">2,000</option><option value="4000" selected>4,000</option><option value="10000">10,000 (as in the paper)</option></select>
+          <button class="btn" id="runBtn">Run</button>
+          <button class="btn ghost" id="clearBtn">Clear all</button>
+        </div>
+        <div class="progress" id="prog" style="margin-top:10px;visibility:hidden"><div></div></div>
+        <p class="hint" id="runHint" style="margin:8px 0 0"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p class="fine"><b>How this version follows the paper, and where it departs.</b> Parameters are the paper’s: 100 firms, <i>d*</i> = <i>σ</i> = 0.025, maximum success rate 0.004, maximum dislocation 0.05, absorptive capacity 0.01, alliance cost 0.000001, and the first 500 periods discarded. Where the paper leaves a detail open, this version makes a choice. A firm with several partners moves toward their average position (the paper states learning for a single pair). Network position is sampled every 10 periods for firm averages, and constraint uses equal tie weights with isolated firms left out. <i>C</i> is drawn between 2 and 30, because near <i>C</i> = 1 the profit distribution turns left-skewed. Skew is measured on innovation-level profits, which reproduces the paper’s reported skews reasonably closely. The networks here run a little sparser and more innovative than the paper reports (average degree about 3.5 against about 5, and 0.4–0.5 innovations per period against about 0.3). Runs are also shorter and fewer than the paper’s 500 runs of 10,000 periods, so the firm-level strategy correlations in particular are noisy. In the opening sample of 150 runs, three of the four predictions in the paper’s Table 1 come through clearly (both cross-section patterns, and the falling strategy correlation for betweenness). The strategy correlation for constraint shows no clear trend, and the variance check in the second chart stays near zero instead of starting positive at low skew as in the paper’s Figure 7. Those two gaps are worth discussing with students as a question about how sensitive a model’s firm-level results are to unstated implementation details. The opening sample was computed in advance with this same code.</p>
+</footer>
+</div>
+
+<script id="core">
+// ---- core model (shared by page and worker) ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const DEF={learn:'mean',N:100,dstar:0.025,sigma:0.025,lbar:0.004,rmax:0.05,alpha:0.01,k:0.000001};
+function torusD(ax,ay,bx,by){let dx=Math.abs(ax-bx),dy=Math.abs(ay-by);if(dx>.5)dx=1-dx;if(dy>.5)dy=1-dy;return Math.sqrt(dx*dx+dy*dy)}
+function wrap(v){v%=1;return v<0?v+1:v}
+function torusDelta(a,b){let d=b-a;if(d>.5)d-=1;else if(d<-.5)d+=1;return d}
+function innovationSizes(C){const H=1.01*C,L=0.01*C,pH=(1-L)/(H-L);return{H,L,pH}}
+
+function createIndustry(C,seed,P){
+  P=Object.assign({},DEF,P||{});const N=P.N,r=mulberry32(seed);
+  const x=new Float64Array(N),y=new Float64Array(N);for(let i=0;i<N;i++){x[i]=r();y[i]=r()}
+  const D=new Float64Array(N*N),lam=new Float64Array(N*N),EV=new Float64Array(N);
+  const nb=[];for(let i=0;i<N;i++) nb.push([]);
+  const {H,L,pH}=innovationSizes(C);
+  const sim={N,C,x,y,nb,t:0,P,last:null,lambdaTot:0,deg:new Int32Array(N)};
+  sim.step=function(){
+    // 1. distances, success rates, expected dislocation value
+    EV.fill(0);const cut=P.dstar+4*P.sigma; // beyond this the success rate is far below any alliance threshold
+    for(let i=0;i<N;i++){D[i*N+i]=0;for(let j=i+1;j<N;j++){const d=torusD(x[i],y[i],x[j],y[j]);D[i*N+j]=D[j*N+i]=d;
+      let l=0;if(d<cut){const z=(d-P.dstar)/P.sigma;l=P.lbar*Math.exp(-z*z)}lam[i*N+j]=lam[j*N+i]=l;
+      const ev=P.rmax*(1-Math.SQRT2*d)/2;EV[i]+=ev;EV[j]+=ev}}
+    // 2. pairwise-stable alliances
+    for(let i=0;i<N;i++) nb[i].length=0;
+    const li=new Float64Array(N);
+    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){const l=lam[i*N+j];if(l*EV[i]>=P.k&&l*EV[j]>=P.k){nb[i].push(j);nb[j].push(i);li[i]+=l;li[j]+=l}}
+    let sg=0;for(let i=0;i<N;i++){sim.deg[i]=nb[i].length;for(const j of nb[i]) if(j>i) sg=(sg+Math.imul(i*131+j+1,2654435761))>>>0}sim.sig=sg;
+    // 3. innovation (at most one per period)
+    let tot=0;for(let i=0;i<N;i++) tot+=li[i];sim.lambdaTot=tot;
+    let inn=-1;const u=r();if(u<tot){let c=0;for(let i=0;i<N;i++){c+=li[i];if(u<c){inn=i;break}}if(inn<0)inn=N-1}
+    // 4. learning: each alliance pulls both partners together
+    const nx=Float64Array.from(x),ny=Float64Array.from(y);
+    for(let i=0;i<N;i++){const w=P.learn==='mean'?P.alpha/(nb[i].length||1):P.alpha;for(const j of nb[i]){nx[i]+=w*torusDelta(x[i],x[j]);ny[i]+=w*torusDelta(y[i],y[j])}}
+    // 5. dislocation by the innovation
+    sim.last=null;
+    if(inn>=0){
+      const theta=r()<pH?H:L;let V=0;const moves=[];
+      for(let j=0;j<N;j++){if(j===inn) continue;const rj=Math.max(0,theta*P.rmax*(1-Math.SQRT2*D[inn*N+j]));
+        const dist=r()*rj,ang=r()*2*Math.PI;V+=dist;nx[j]+=dist*Math.cos(ang);ny[j]+=dist*Math.sin(ang);moves.push(dist)}
+      sim.last={i:inn,theta,big:theta===H,V,profit:V-P.k*nb[inn].length};
+    }
+    for(let i=0;i<N;i++){x[i]=wrap(nx[i]);y[i]=wrap(ny[i])}
+    sim.t++;return sim.last;
+  };
+  return sim;
+}
+
+// Brandes betweenness, unweighted undirected (pair counted once); predecessors found by distance
+const _bw={};
+function betweenness(nb){
+  const N=nb.length;if(_bw.N!==N){Object.assign(_bw,{N,S:new Int32Array(N),sig:new Float64Array(N),d:new Int32Array(N),del:new Float64Array(N)})}
+  const {S,sig,d,del}=_bw,CB=new Float64Array(N);
+  for(let s=0;s<N;s++){
+    if(!nb[s].length) continue;
+    d.fill(-1);sig[s]=1;d[s]=0;S[0]=s;let qh=0,qt=1;
+    while(qh<qt){const v=S[qh++],dv=d[v]+1,a=nb[v];for(let k=0;k<a.length;k++){const w=a[k];if(d[w]<0){d[w]=dv;sig[w]=0;S[qt++]=w}if(d[w]===dv) sig[w]+=sig[v]}}
+    for(let k=0;k<qt;k++) del[S[k]]=0;
+    for(let k=qt-1;k>0;k--){const w=S[k],dw=d[w]-1,a=nb[w],cw=(1+del[w])/sig[w];for(let m=0;m<a.length;m++){const v=a[m];if(d[v]===dw) del[v]+=sig[v]*cw}CB[w]+=del[w]}
+  }
+  for(let i=0;i<N;i++) CB[i]/=2;return CB;
+}
+// Burt's constraint with equal tie weights; NaN for isolates
+let _A=null;
+function constraint(nb){
+  const N=nb.length;if(!_A||_A.length!==N*N) _A=new Uint8Array(N*N);const A=_A,out=new Float64Array(N);
+  for(let i=0;i<N;i++) for(const j of nb[i]) A[i*N+j]=1;
+  for(let i=0;i<N;i++){const ni=nb[i];if(!ni.length){out[i]=NaN;continue}const pi=1/ni.length;let c=0;
+    for(const j of ni){let s=pi;for(const q of ni){if(q!==j&&A[q*N+j]) s+=pi/nb[q].length}c+=s*s}out[i]=c}
+  for(let i=0;i<N;i++) for(const j of nb[i]) A[i*N+j]=0;
+  return out;
+}
+function clustering(nb){const N=nb.length,set=nb.map(a=>new Set(a));let s=0;
+  for(let i=0;i<N;i++){const a=nb[i],k=a.length;if(k<2) continue;let e=0;for(let p=0;p<k;p++) for(let q=p+1;q<k;q++) if(set[a[p]].has(a[q])) e++;s+=2*e/(k*(k-1))}return s/N}
+
+// statistics
+function ranks(a){const n=a.length,idx=[...Array(n).keys()].sort((p,q)=>a[p]-a[q]),r=new Float64Array(n);
+  for(let i=0;i<n;){let j=i;while(j+1<n&&a[idx[j+1]]===a[idx[i]]) j++;const rk=(i+j)/2+1;for(let k=i;k<=j;k++) r[idx[k]]=rk;i=j+1}return r}
+function pearson(a,b){const n=a.length;if(n<3) return NaN;let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a[i];mb+=b[i]}ma/=n;mb/=n;
+  let sab=0,saa=0,sbb=0;for(let i=0;i<n;i++){const u=a[i]-ma,v=b[i]-mb;sab+=u*v;saa+=u*u;sbb+=v*v}return saa&&sbb?sab/Math.sqrt(saa*sbb):NaN}
+function spearman(a,b){const pa=[],pb=[];for(let i=0;i<a.length;i++) if(isFinite(a[i])&&isFinite(b[i])){pa.push(a[i]);pb.push(b[i])}return pearson(ranks(pa),ranks(pb))}
+function skewness(a){const n=a.length;if(n<3) return NaN;let m=0;for(const v of a) m+=v;m/=n;let m2=0,m3=0;for(const v of a){const d=v-m;m2+=d*d;m3+=d*d*d}m2/=n;m3/=n;return m2?m3/Math.pow(m2,1.5):0}
+
+// One full run for the cross-section vs. strategy analysis
+function fullRun(C,seed,T,burn,sample,P){
+  const sim=createIndustry(C,seed,P),N=sim.N;
+  const csProfit=[],csBet=[],csCon=[];
+  const tot=new Float64Array(N),sq=new Float64Array(N),bSum=new Float64Array(N),bN=new Float64Array(N),cSum=new Float64Array(N),cN=new Float64Array(N);
+  let degSum=0,degN=0,innov=0,periods=0,cacheSig=-1,cacheB=null,cacheK=null;
+  for(let t=0;t<T;t++){
+    const ev=sim.step();
+    if(t<burn) continue;
+    periods++;
+    const doSample=(t-burn)%sample===0;
+    let B=null,K=null;
+    if(ev||doSample){const sg=sim.sig;if(sg!==cacheSig){cacheB=betweenness(sim.nb);cacheK=constraint(sim.nb);cacheSig=sg}B=cacheB;K=cacheK}
+    for(let i=0;i<N;i++){const p=(ev&&ev.i===i?ev.V:0)-sim.P.k*sim.deg[i];tot[i]+=p;sq[i]+=p*p}
+    if(ev){innov++;csProfit.push(ev.profit);csBet.push(B[ev.i]);csCon.push(K[ev.i])}
+    if(doSample){for(let i=0;i<N;i++){bSum[i]+=B[i];bN[i]++;if(isFinite(K[i])){cSum[i]+=K[i];cN[i]++}degSum+=sim.deg[i];degN++}}
+  }
+  const avgB=Array.from(bSum,(s,i)=>s/bN[i]),avgC=Array.from(cSum,(s,i)=>cN[i]?s/cN[i]:NaN),total=Array.from(tot),
+        varP=Array.from(sq,(s,i)=>s/periods-(tot[i]/periods)**2);
+  return {C,skew:skewness(csProfit),innov,periods,avgDeg:degSum/degN,
+    csB:spearman(csProfit,csBet),csK:spearman(csProfit,csCon),
+    stB:spearman(total,avgB),stK:spearman(total,avgC),
+    vB:spearman(varP,avgB),vK:spearman(varP,avgC)};
+}
+
+// The March-style illustration in the paper's Figure 2 (rank correlations)
+function marchToy(C,seed,periods){
+  const r=mulberry32(seed),N=100,c=new Float64Array(N),tot=new Float64Array(N);for(let i=0;i<N;i++) c[i]=1+r()*(C-1);
+  const pay=new Float64Array(periods),ci=new Float64Array(periods);
+  for(let t=0;t<periods;t++){const i=Math.floor(r()*N),H=1.01*c[i],L=0.01*c[i],p=(1-L)/(H-L),v=r()<p?H:L;pay[t]=v;ci[t]=c[i];tot[i]+=v}
+  return {C,skew:skewness(Array.from(pay)),cs:spearman(Array.from(pay),Array.from(ci)),lr:spearman(Array.from(tot),Array.from(c))};
+}
+
+</script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const PRE=[{"C":2.43,"skew":0.421,"csB":0.094,"stB":0.248,"csK":-0.098,"stK":-0.268,"vB":0.243,"vK":-0.263},{"C":26.72,"skew":5.852,"csB":0.219,"stB":-0.01,"csK":-0.304,"stK":-0.113,"vB":-0.021,"vK":-0.098},{"C":6.58,"skew":2.09,"csB":0.145,"stB":-0.019,"csK":-0.198,"stK":-0.05,"vB":-0.011,"vK":-0.049},{"C":11.08,"skew":3.494,"csB":0.214,"stB":-0.016,"csK":-0.287,"stK":0.056,"vB":-0.005,"vK":0.064},{"C":5.86,"skew":1.851,"csB":0.116,"stB":0.017,"csK":-0.147,"stK":-0.051,"vB":0.025,"vK":-0.045},{"C":25.13,"skew":5.39,"csB":0.26,"stB":-0.03,"csK":-0.42,"stK":-0.152,"vB":-0.012,"vK":-0.168},{"C":19.77,"skew":4.709,"csB":0.296,"stB":0.115,"csK":-0.445,"stK":-0.172,"vB":0.123,"vK":-0.171},{"C":24.89,"skew":5.646,"csB":0.327,"stB":0.03,"csK":-0.473,"stK":0.085,"vB":0.031,"vK":0.083},{"C":18.71,"skew":4.46,"csB":0.269,"stB":-0.028,"csK":-0.402,"stK":0.163,"vB":-0.022,"vK":0.154},{"C":16.54,"skew":4.433,"csB":0.276,"stB":-0.201,"csK":-0.4,"stK":-0.079,"vB":-0.191,"vK":-0.088},{"C":13.37,"skew":3.56,"csB":0.181,"stB":-0.079,"csK":-0.271,"stK":0.097,"vB":-0.056,"vK":0.079},{"C":28.21,"skew":7.326,"csB":0.299,"stB":-0.025,"csK":-0.438,"stK":-0.194,"vB":-0.012,"vK":-0.199},{"C":27.67,"skew":5.679,"csB":0.242,"stB":0.049,"csK":-0.331,"stK":-0.134,"vB":0.069,"vK":-0.136},{"C":11.02,"skew":3.075,"csB":0.179,"stB":-0.097,"csK":-0.255,"stK":0.172,"vB":-0.103,"vK":0.193},{"C":3.72,"skew":1.102,"csB":0.1,"stB":-0.202,"csK":-0.124,"stK":-0.011,"vB":-0.199,"vK":-0.01},{"C":28.33,"skew":6.41,"csB":0.204,"stB":-0.046,"csK":-0.326,"stK":0.069,"vB":-0.041,"vK":0.079},{"C":5.36,"skew":1.669,"csB":0.094,"stB":-0.131,"csK":-0.14,"stK":0.194,"vB":-0.118,"vK":0.191},{"C":29.53,"skew":6.8,"csB":0.266,"stB":-0.149,"csK":-0.387,"stK":0.057,"vB":-0.145,"vK":0.045},{"C":16.45,"skew":4.553,"csB":0.308,"stB":0.026,"csK":-0.434,"stK":0.054,"vB":0.024,"vK":0.061},{"C":8.11,"skew":2.428,"csB":0.158,"stB":-0.224,"csK":-0.2,"stK":0.1,"vB":-0.226,"vK":0.109},{"C":14.71,"skew":4.024,"csB":0.207,"stB":0.088,"csK":-0.296,"stK":0.03,"vB":0.097,"vK":0.038},{"C":7.41,"skew":2.363,"csB":0.165,"stB":-0.082,"csK":-0.209,"stK":0.028,"vB":-0.084,"vK":0.027},{"C":23.98,"skew":5.468,"csB":0.25,"stB":-0.148,"csK":-0.377,"stK":0.028,"vB":-0.146,"vK":0.019},{"C":21.17,"skew":4.692,"csB":0.206,"stB":0.029,"csK":-0.353,"stK":-0.048,"vB":0.027,"vK":-0.055},{"C":19.51,"skew":4.455,"csB":0.259,"stB":-0.02,"csK":-0.389,"stK":0.086,"vB":-0.016,"vK":0.103},{"C":18.87,"skew":4.587,"csB":0.276,"stB":-0.044,"csK":-0.39,"stK":0.003,"vB":-0.041,"vK":0.023},{"C":8.52,"skew":2.535,"csB":0.156,"stB":0.009,"csK":-0.139,"stK":0.055,"vB":-0.004,"vK":0.073},{"C":15.16,"skew":3.755,"csB":0.24,"stB":-0.049,"csK":-0.284,"stK":-0.045,"vB":-0.046,"vK":-0.041},{"C":24.75,"skew":5.62,"csB":0.253,"stB":-0.07,"csK":-0.36,"stK":-0.207,"vB":-0.06,"vK":-0.194},{"C":21.37,"skew":4.533,"csB":0.276,"stB":-0.007,"csK":-0.394,"stK":-0.109,"vB":0.005,"vK":-0.104},{"C":25.59,"skew":6.017,"csB":0.253,"stB":0.098,"csK":-0.386,"stK":-0.107,"vB":0.092,"vK":-0.106},{"C":3.59,"skew":1.084,"csB":0.114,"stB":0.28,"csK":-0.145,"stK":-0.207,"vB":0.277,"vK":-0.203},{"C":11.05,"skew":3.181,"csB":0.186,"stB":-0.048,"csK":-0.264,"stK":-0.143,"vB":-0.043,"vK":-0.131},{"C":21.15,"skew":5.075,"csB":0.311,"stB":-0.055,"csK":-0.481,"stK":0.012,"vB":-0.04,"vK":0.009},{"C":2.92,"skew":0.611,"csB":0.099,"stB":0.112,"csK":-0.138,"stK":-0.29,"vB":0.125,"vK":-0.306},{"C":4.66,"skew":1.367,"csB":0.105,"stB":0.02,"csK":-0.104,"stK":-0.119,"vB":0.014,"vK":-0.11},{"C":8.32,"skew":2.601,"csB":0.167,"stB":-0.014,"csK":-0.204,"stK":0.023,"vB":-0.007,"vK":0.03},{"C":8.88,"skew":2.649,"csB":0.142,"stB":0.062,"csK":-0.182,"stK":-0.134,"vB":0.061,"vK":-0.118},{"C":15.26,"skew":4.121,"csB":0.228,"stB":-0.008,"csK":-0.357,"stK":-0.009,"vB":0.003,"vK":-0.001},{"C":22.7,"skew":4.931,"csB":0.233,"stB":0.041,"csK":-0.369,"stK":-0.044,"vB":0.047,"vK":-0.033},{"C":15.1,"skew":3.726,"csB":0.275,"stB":-0.233,"csK":-0.339,"stK":-0.068,"vB":-0.244,"vK":-0.054},{"C":20.17,"skew":4.691,"csB":0.223,"stB":0.025,"csK":-0.335,"stK":-0.085,"vB":0.037,"vK":-0.101},{"C":4.72,"skew":1.643,"csB":0.071,"stB":-0.111,"csK":-0.154,"stK":0.176,"vB":-0.101,"vK":0.178},{"C":25.49,"skew":5.999,"csB":0.242,"stB":-0.016,"csK":-0.339,"stK":0.053,"vB":-0.021,"vK":0.052},{"C":9.94,"skew":2.586,"csB":0.165,"stB":0.065,"csK":-0.201,"stK":-0.003,"vB":0.058,"vK":0.017},{"C":18.54,"skew":4.363,"csB":0.241,"stB":-0.04,"csK":-0.375,"stK":-0.226,"vB":-0.013,"vK":-0.228},{"C":29.26,"skew":6.688,"csB":0.249,"stB":-0.02,"csK":-0.336,"stK":-0.229,"vB":-0.002,"vK":-0.236},{"C":8.74,"skew":2.765,"csB":0.193,"stB":-0.054,"csK":-0.271,"stK":-0.097,"vB":-0.049,"vK":-0.096},{"C":14.29,"skew":3.501,"csB":0.217,"stB":-0.051,"csK":-0.321,"stK":0.139,"vB":-0.079,"vK":0.16},{"C":6.45,"skew":2.175,"csB":0.142,"stB":-0.048,"csK":-0.188,"stK":-0.055,"vB":-0.052,"vK":-0.041},{"C":26.29,"skew":5.275,"csB":0.26,"stB":-0.015,"csK":-0.372,"stK":0.008,"vB":-0.008,"vK":0.002},{"C":13.62,"skew":3.563,"csB":0.22,"stB":-0.056,"csK":-0.294,"stK":0.056,"vB":-0.047,"vK":0.045},{"C":9.14,"skew":2.758,"csB":0.19,"stB":-0.116,"csK":-0.304,"stK":0.117,"vB":-0.111,"vK":0.13},{"C":2.02,"skew":0.121,"csB":0.08,"stB":0.128,"csK":-0.081,"stK":-0.004,"vB":0.123,"vK":0.005},{"C":5.41,"skew":1.742,"csB":0.14,"stB":-0.052,"csK":-0.181,"stK":0.083,"vB":-0.04,"vK":0.086},{"C":16.9,"skew":4.006,"csB":0.259,"stB":0.172,"csK":-0.34,"stK":-0.119,"vB":0.206,"vK":-0.132},{"C":25.41,"skew":5.872,"csB":0.306,"stB":-0.154,"csK":-0.418,"stK":0.036,"vB":-0.148,"vK":0.049},{"C":8.83,"skew":2.719,"csB":0.147,"stB":0.237,"csK":-0.191,"stK":-0.156,"vB":0.212,"vK":-0.129},{"C":17.18,"skew":4.262,"csB":0.248,"stB":-0.081,"csK":-0.316,"stK":-0.106,"vB":-0.055,"vK":-0.11},{"C":5.37,"skew":1.639,"csB":0.094,"stB":0.145,"csK":-0.15,"stK":0.029,"vB":0.139,"vK":0.041},{"C":12.61,"skew":3.175,"csB":0.227,"stB":0.002,"csK":-0.317,"stK":-0.063,"vB":0.001,"vK":-0.061},{"C":23.98,"skew":5.644,"csB":0.23,"stB":-0.097,"csK":-0.325,"stK":-0.121,"vB":-0.1,"vK":-0.111},{"C":22.53,"skew":5.224,"csB":0.296,"stB":-0.049,"csK":-0.368,"stK":-0.058,"vB":-0.049,"vK":-0.062},{"C":23.74,"skew":4.928,"csB":0.25,"stB":-0.044,"csK":-0.341,"stK":-0.025,"vB":-0.048,"vK":-0.026},{"C":13.75,"skew":3.633,"csB":0.217,"stB":-0.171,"csK":-0.311,"stK":0.008,"vB":-0.17,"vK":0.026},{"C":2.4,"skew":0.435,"csB":0.09,"stB":0.07,"csK":-0.083,"stK":-0.202,"vB":0.073,"vK":-0.202},{"C":8.61,"skew":2.615,"csB":0.131,"stB":0.045,"csK":-0.199,"stK":0.091,"vB":0.057,"vK":0.095},{"C":4.41,"skew":1.533,"csB":0.098,"stB":-0.033,"csK":-0.116,"stK":-0.01,"vB":-0.039,"vK":-0.003},{"C":21.4,"skew":5.561,"csB":0.364,"stB":-0.073,"csK":-0.481,"stK":-0.014,"vB":-0.085,"vK":-0.015},{"C":28.61,"skew":5.838,"csB":0.23,"stB":-0.203,"csK":-0.314,"stK":-0.029,"vB":-0.192,"vK":-0.026},{"C":26.42,"skew":5.583,"csB":0.269,"stB":-0.103,"csK":-0.384,"stK":-0.258,"vB":-0.08,"vK":-0.233},{"C":29.03,"skew":6.071,"csB":0.246,"stB":0.069,"csK":-0.318,"stK":0.035,"vB":0.073,"vK":0.039},{"C":10.3,"skew":3.062,"csB":0.13,"stB":-0.192,"csK":-0.245,"stK":-0.037,"vB":-0.187,"vK":-0.029},{"C":2.43,"skew":0.426,"csB":0.113,"stB":0.185,"csK":-0.131,"stK":-0.158,"vB":0.192,"vK":-0.162},{"C":9.04,"skew":2.98,"csB":0.175,"stB":0.146,"csK":-0.263,"stK":0.081,"vB":0.102,"vK":0.086},{"C":11.21,"skew":3.23,"csB":0.177,"stB":-0.085,"csK":-0.249,"stK":0.064,"vB":-0.086,"vK":0.073},{"C":27.85,"skew":5.582,"csB":0.214,"stB":-0.055,"csK":-0.386,"stK":-0.251,"vB":-0.05,"vK":-0.241},{"C":29.49,"skew":5.977,"csB":0.218,"stB":-0.054,"csK":-0.366,"stK":-0.017,"vB":-0.057,"vK":-0.009},{"C":17.18,"skew":4.548,"csB":0.251,"stB":-0.019,"csK":-0.325,"stK":0.011,"vB":-0.016,"vK":0.027},{"C":24.65,"skew":5.149,"csB":0.255,"stB":0.022,"csK":-0.398,"stK":-0.134,"vB":-0.008,"vK":-0.121},{"C":5.77,"skew":2.011,"csB":0.146,"stB":0.082,"csK":-0.161,"stK":-0.053,"vB":0.085,"vK":-0.045},{"C":15.65,"skew":4.457,"csB":0.231,"stB":-0.168,"csK":-0.355,"stK":0,"vB":-0.16,"vK":-0.002},{"C":5.67,"skew":1.644,"csB":0.13,"stB":0.097,"csK":-0.17,"stK":0.009,"vB":0.093,"vK":0.004},{"C":15.61,"skew":4.157,"csB":0.268,"stB":-0.091,"csK":-0.365,"stK":0.082,"vB":-0.097,"vK":0.085},{"C":12.2,"skew":3.099,"csB":0.231,"stB":0.004,"csK":-0.287,"stK":-0.007,"vB":0.006,"vK":0.001},{"C":28.19,"skew":5.737,"csB":0.224,"stB":-0.001,"csK":-0.341,"stK":0.021,"vB":0.001,"vK":0.024},{"C":28.6,"skew":6.107,"csB":0.182,"stB":-0.088,"csK":-0.334,"stK":-0.101,"vB":-0.082,"vK":-0.104},{"C":3.69,"skew":1.071,"csB":0.092,"stB":0.034,"csK":-0.085,"stK":-0.104,"vB":0.04,"vK":-0.103},{"C":11.46,"skew":3.279,"csB":0.181,"stB":0.035,"csK":-0.237,"stK":-0.067,"vB":0.042,"vK":-0.037},{"C":8.77,"skew":2.743,"csB":0.148,"stB":-0.022,"csK":-0.198,"stK":-0.116,"vB":-0.029,"vK":-0.108},{"C":29.42,"skew":6.345,"csB":0.27,"stB":-0.126,"csK":-0.394,"stK":-0.186,"vB":-0.125,"vK":-0.176},{"C":16.35,"skew":4.6,"csB":0.226,"stB":0.097,"csK":-0.383,"stK":-0.135,"vB":0.095,"vK":-0.129},{"C":26.79,"skew":6.146,"csB":0.245,"stB":-0.078,"csK":-0.399,"stK":-0.096,"vB":-0.054,"vK":-0.127},{"C":3.25,"skew":1.137,"csB":0.127,"stB":0.126,"csK":-0.148,"stK":-0.187,"vB":0.137,"vK":-0.199},{"C":10.65,"skew":2.84,"csB":0.192,"stB":-0.102,"csK":-0.291,"stK":0.14,"vB":-0.1,"vK":0.143},{"C":15.24,"skew":3.695,"csB":0.186,"stB":0.049,"csK":-0.298,"stK":-0.075,"vB":0.047,"vK":-0.076},{"C":20.7,"skew":4.835,"csB":0.275,"stB":-0.041,"csK":-0.331,"stK":-0.007,"vB":-0.038,"vK":-0.006},{"C":23.99,"skew":5.119,"csB":0.341,"stB":-0.038,"csK":-0.457,"stK":0.176,"vB":-0.014,"vK":0.163},{"C":29.08,"skew":6.214,"csB":0.276,"stB":0.059,"csK":-0.414,"stK":-0.019,"vB":0.064,"vK":-0.019},{"C":24.35,"skew":5.694,"csB":0.261,"stB":0.028,"csK":-0.316,"stK":0.17,"vB":0.05,"vK":0.149},{"C":22.44,"skew":5.043,"csB":0.261,"stB":-0.078,"csK":-0.359,"stK":-0.027,"vB":-0.058,"vK":-0.023},{"C":23.7,"skew":5.545,"csB":0.263,"stB":0.1,"csK":-0.369,"stK":-0.132,"vB":0.123,"vK":-0.153},{"C":28.8,"skew":5.902,"csB":0.231,"stB":0.067,"csK":-0.292,"stK":-0.198,"vB":0.077,"vK":-0.196},{"C":29.45,"skew":7.345,"csB":0.193,"stB":-0.05,"csK":-0.382,"stK":-0.169,"vB":-0.041,"vK":-0.178},{"C":13.38,"skew":3.495,"csB":0.265,"stB":-0.185,"csK":-0.344,"stK":0.07,"vB":-0.19,"vK":0.059},{"C":18.67,"skew":4.495,"csB":0.288,"stB":-0.064,"csK":-0.405,"stK":0.047,"vB":-0.064,"vK":0.059},{"C":11.18,"skew":2.987,"csB":0.128,"stB":-0.198,"csK":-0.202,"stK":-0.053,"vB":-0.184,"vK":-0.039},{"C":8.74,"skew":2.41,"csB":0.18,"stB":-0.151,"csK":-0.214,"stK":0.045,"vB":-0.156,"vK":0.054},{"C":20.36,"skew":5.437,"csB":0.26,"stB":-0.152,"csK":-0.429,"stK":0.023,"vB":-0.162,"vK":0.032},{"C":4.77,"skew":1.574,"csB":0.123,"stB":-0.098,"csK":-0.121,"stK":0.026,"vB":-0.079,"vK":0.028},{"C":23.85,"skew":5.109,"csB":0.256,"stB":-0.168,"csK":-0.407,"stK":0.071,"vB":-0.16,"vK":0.078},{"C":23.23,"skew":5.154,"csB":0.295,"stB":-0.091,"csK":-0.426,"stK":0.08,"vB":-0.083,"vK":0.09},{"C":26.48,"skew":5.851,"csB":0.227,"stB":-0.053,"csK":-0.319,"stK":0.166,"vB":-0.017,"vK":0.15},{"C":8.76,"skew":2.985,"csB":0.186,"stB":0.047,"csK":-0.242,"stK":-0.036,"vB":0.056,"vK":-0.033},{"C":25.88,"skew":6.105,"csB":0.189,"stB":-0.016,"csK":-0.272,"stK":-0.223,"vB":-0.034,"vK":-0.214},{"C":14,"skew":3.815,"csB":0.261,"stB":-0.004,"csK":-0.341,"stK":-0.02,"vB":-0.001,"vK":-0.024},{"C":2.4,"skew":0.309,"csB":0.112,"stB":0.152,"csK":-0.133,"stK":-0.189,"vB":0.166,"vK":-0.198},{"C":2.85,"skew":0.758,"csB":0.008,"stB":0.121,"csK":-0.029,"stK":-0.018,"vB":0.115,"vK":-0.009},{"C":12.46,"skew":3.413,"csB":0.197,"stB":-0.002,"csK":-0.252,"stK":0.059,"vB":0.013,"vK":0.047},{"C":12.4,"skew":3.405,"csB":0.168,"stB":0.016,"csK":-0.253,"stK":-0.087,"vB":0.028,"vK":-0.086},{"C":28.3,"skew":5.899,"csB":0.267,"stB":-0.073,"csK":-0.388,"stK":0.027,"vB":-0.051,"vK":0.017},{"C":2.36,"skew":0.342,"csB":0.083,"stB":0.111,"csK":-0.105,"stK":-0.214,"vB":0.131,"vK":-0.223},{"C":7.48,"skew":2.207,"csB":0.181,"stB":-0.004,"csK":-0.233,"stK":-0.071,"vB":0.006,"vK":-0.069},{"C":2.82,"skew":0.677,"csB":0.047,"stB":0.142,"csK":-0.05,"stK":-0.187,"vB":0.153,"vK":-0.187},{"C":7.53,"skew":2.445,"csB":0.103,"stB":-0.197,"csK":-0.126,"stK":0.01,"vB":-0.197,"vK":0.023},{"C":27.6,"skew":6.527,"csB":0.233,"stB":-0.083,"csK":-0.385,"stK":-0.079,"vB":-0.086,"vK":-0.07},{"C":5.54,"skew":1.751,"csB":0.134,"stB":-0.24,"csK":-0.177,"stK":0.178,"vB":-0.231,"vK":0.186},{"C":17.54,"skew":4.431,"csB":0.241,"stB":0.094,"csK":-0.36,"stK":-0.079,"vB":0.07,"vK":-0.06},{"C":25.38,"skew":6.363,"csB":0.211,"stB":0.009,"csK":-0.388,"stK":-0.114,"vB":0.009,"vK":-0.125},{"C":24.91,"skew":5.54,"csB":0.256,"stB":-0.066,"csK":-0.345,"stK":-0.028,"vB":-0.057,"vK":-0.017},{"C":28.34,"skew":5.888,"csB":0.246,"stB":-0.025,"csK":-0.349,"stK":-0.002,"vB":0.005,"vK":-0.009},{"C":5.45,"skew":1.831,"csB":0.104,"stB":0.176,"csK":-0.155,"stK":0.036,"vB":0.171,"vK":0.038},{"C":21.75,"skew":4.874,"csB":0.256,"stB":0.003,"csK":-0.343,"stK":-0.03,"vB":-0.013,"vK":-0.025},{"C":22.78,"skew":5.696,"csB":0.304,"stB":-0.157,"csK":-0.44,"stK":-0.048,"vB":-0.15,"vK":-0.054},{"C":13.96,"skew":3.825,"csB":0.223,"stB":0.106,"csK":-0.323,"stK":-0.141,"vB":0.105,"vK":-0.132},{"C":12.53,"skew":3.589,"csB":0.162,"stB":0.001,"csK":-0.304,"stK":-0.078,"vB":-0.012,"vK":-0.074},{"C":11.13,"skew":3.233,"csB":0.182,"stB":-0.087,"csK":-0.256,"stK":0.106,"vB":-0.089,"vK":0.124},{"C":9,"skew":2.788,"csB":0.132,"stB":-0.014,"csK":-0.195,"stK":0.114,"vB":-0.003,"vK":0.132},{"C":14.89,"skew":4.078,"csB":0.212,"stB":-0.055,"csK":-0.328,"stK":0.01,"vB":-0.038,"vK":0.005},{"C":25.22,"skew":6.446,"csB":0.281,"stB":-0.089,"csK":-0.343,"stK":-0.006,"vB":-0.077,"vK":-0.009},{"C":18.78,"skew":4.218,"csB":0.257,"stB":-0.103,"csK":-0.374,"stK":0,"vB":-0.106,"vK":-0.005},{"C":12.34,"skew":3.478,"csB":0.202,"stB":-0.146,"csK":-0.264,"stK":0.036,"vB":-0.147,"vK":0.034},{"C":24.96,"skew":5.341,"csB":0.257,"stB":-0.048,"csK":-0.388,"stK":-0.074,"vB":-0.051,"vK":-0.07},{"C":28.04,"skew":6.727,"csB":0.276,"stB":-0.24,"csK":-0.397,"stK":-0.162,"vB":-0.214,"vK":-0.177},{"C":8.5,"skew":2.666,"csB":0.14,"stB":0.056,"csK":-0.172,"stK":-0.053,"vB":0.056,"vK":-0.041},{"C":19.2,"skew":5.046,"csB":0.175,"stB":-0.012,"csK":-0.338,"stK":0.034,"vB":-0.005,"vK":0.033},{"C":29.66,"skew":6.613,"csB":0.234,"stB":0.047,"csK":-0.307,"stK":-0.197,"vB":0.051,"vK":-0.2},{"C":10.29,"skew":2.643,"csB":0.233,"stB":0.106,"csK":-0.275,"stK":-0.148,"vB":0.106,"vK":-0.144},{"C":29.92,"skew":7.002,"csB":0.2,"stB":-0.126,"csK":-0.315,"stK":-0.141,"vB":-0.125,"vK":-0.121},{"C":29.13,"skew":5.999,"csB":0.257,"stB":0.061,"csK":-0.326,"stK":-0.173,"vB":0.051,"vK":-0.172}];
+
+/* ---------- theme ---------- */
+let TH={};
+function hex(c){c=c.trim();if(c[0]!=="#") return[128,128,128];if(c.length===4)c="#"+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];return[1,3,5].map(k=>parseInt(c.slice(k,k+2),16))}
+function readTheme(){const cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue(n).trim();
+  TH={ink:g("--ink"),muted:g("--muted"),line:g("--line"),surface:g("--surface"),accent:g("--accent"),cs:g("--cs"),st:g("--st"),big:g("--big"),edge:g("--edge"),
+    lo:hex(g("--r-lo")),hi:hex(g("--r-hi")),l:[g("--l1"),g("--l2"),g("--l3")]}}
+function ramp(v){v=Math.max(0,Math.min(1,v));const a=TH.lo,b=TH.hi;return `rgb(${a.map((x,i)=>Math.round(x+(b[i]-x)*v)).join(",")})`}
+
+/* ---------- chart helpers ---------- */
+function setup(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
+  const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.font="11px 'IBM Plex Mono', ui-monospace, monospace";return{ctx,w,h}}
+function nice(range,target){const raw=range/target,p=10**Math.floor(Math.log10(raw)),n=raw/p;return(n<1.5?1:n<3?2:n<7?5:10)*p}
+function axes(ctx,w,h,pad,x0,x1,y0,y1,xlab,fy){
+  const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,X=v=>pad.l+(v-x0)/(x1-x0)*pw,Y=v=>pad.t+ph-(v-y0)/(y1-y0)*ph;
+  ctx.lineWidth=1;ctx.textAlign="right";ctx.textBaseline="middle";const ys=nice(y1-y0,5);
+  for(let v=Math.ceil(y0/ys-1e-9)*ys;v<=y1+1e-9;v+=ys){ctx.strokeStyle=TH.line;ctx.beginPath();ctx.moveTo(pad.l,Math.round(Y(v))+.5);ctx.lineTo(w-pad.r,Math.round(Y(v))+.5);ctx.stroke();ctx.fillStyle=TH.muted;ctx.fillText(fy(v),pad.l-6,Y(v))}
+  if(y0<0&&y1>0){ctx.strokeStyle=TH.muted;ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(pad.l,Math.round(Y(0))+.5);ctx.lineTo(w-pad.r,Math.round(Y(0))+.5);ctx.stroke();ctx.globalAlpha=1}
+  ctx.textAlign="center";ctx.textBaseline="top";const xs=nice(x1-x0,w<420?4:7);
+  for(let v=Math.ceil(x0/xs-1e-9)*xs;v<=x1+1e-9;v+=xs){ctx.fillStyle=TH.muted;ctx.fillText(+v.toFixed(2)+"",X(v),pad.t+ph+6)}
+  if(xlab){ctx.textAlign="right";ctx.fillText(xlab,w-pad.r,pad.t+ph+20)}
+  return{X,Y,pw,ph};
+}
+function ols(xs,ys){const n=xs.length;if(n<3) return null;let mx=0,my=0;for(let i=0;i<n;i++){mx+=xs[i];my+=ys[i]}mx/=n;my/=n;let sxy=0,sxx=0;for(let i=0;i<n;i++){sxy+=(xs[i]-mx)*(ys[i]-my);sxx+=(xs[i]-mx)**2}if(!sxx) return null;const b=sxy/sxx;return{b,a:my-b*mx,my}}
+function plus(ctx,x,y,s){ctx.beginPath();ctx.moveTo(x-s,y);ctx.lineTo(x+s,y);ctx.moveTo(x,y-s);ctx.lineTo(x,y+s);ctx.stroke()}
+function scatterTwo(cv,pts,ka,kb,opts){
+  const {ctx,w,h}=setup(cv),pad={l:44,r:12,t:10,b:34};
+  const xs=pts.map(p=>p.skew).filter(isFinite);let x0=Math.min(...xs,0.5),x1=Math.max(...xs,4.5);x0=Math.floor(x0*2)/2;x1=Math.ceil(x1*2)/2;
+  let ys=[];pts.forEach(p=>{[ka,kb].forEach(k=>{if(k&&isFinite(p[k])) ys.push(p[k])})});
+  let y0=Math.min(-.2,...ys),y1=Math.max(.2,...ys);const pd=(y1-y0)*.06;y0=Math.floor((y0-pd)*10)/10;y1=Math.ceil((y1+pd)*10)/10;
+  const {X,Y}=axes(ctx,w,h,pad,x0,x1,y0,y1,"skewness →",v=>v.toFixed(1));
+  const series=[[ka,TH.cs,"plus"],[kb,TH.st,"dot"]].filter(s=>s[0]);
+  for(const [k,col,mk] of series){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.3;ctx.globalAlpha=.75;
+    for(const p of pts){if(!isFinite(p[k])||!isFinite(p.skew)) continue;const x=X(p.skew),y=Y(p[k]);if(mk==="plus") plus(ctx,x,y,3.2);else{ctx.beginPath();ctx.arc(x,y,2.6,0,7);ctx.fill()}}
+    ctx.globalAlpha=1}
+  for(const [k,col] of series){
+    const ok=pts.filter(p=>isFinite(p[k])&&isFinite(p.skew)),fx=ok.map(p=>p.skew),fy=ok.map(p=>p[k]);
+    if(opts&&opts.smooth){const sm=runningMean(fx,fy,x0,x1);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();sm.forEach((q,i)=>{i?ctx.lineTo(X(q[0]),Y(q[1])):ctx.moveTo(X(q[0]),Y(q[1]))});ctx.stroke()}
+    else{const f=ols(fx,fy);if(!f) continue;const a=Math.min(...fx),b=Math.max(...fx);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(X(a),Y(f.a+f.b*a));ctx.lineTo(X(b),Y(f.a+f.b*b));ctx.stroke()}
+  }
+}
+function runningMean(xs,ys,x0,x1){const out=[],bw=Math.max(.35,(x1-x0)/10);
+  for(let x=x0;x<=x1+1e-9;x+=(x1-x0)/40){let s=0,n=0;for(let i=0;i<xs.length;i++){const d=Math.abs(xs[i]-x);if(d<bw){const w=1-(d/bw)**2;s+=w*ys[i];n+=w}}if(n>2) out.push([x,s/n])}return out}
+
+/* ---------- Part 1 ---------- */
+let toyPts=[],toySeed=1;
+function runToy(){const r=mulberry32(toySeed++*7919);toyPts=[];for(let k=0;k<150;k++){const C=2+23*r(),m=marchToy(C,Math.floor(r()*1e9),2000);toyPts.push({skew:m.skew,cs:m.cs,lr:m.lr})}drawToy()}
+function drawToy(){scatterTwo($("#cToy"),toyPts,"cs","lr")}
+function lnpdf(x,s){const mu=-s*s/2;return Math.exp(-((Math.log(x)-mu)**2)/(2*s*s))/(x*s*Math.sqrt(2*Math.PI))}
+const SIG=[0.2,0.5,1.0];
+function drawFig1(){const {ctx,w,h}=setup($("#cFig1")),pad={l:12,r:12,t:8,b:22},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,xm=3.2;
+  let ym=0;const curves=SIG.map(s=>{const pts=[];for(let i=1;i<=240;i++){const x=i/240*xm,y=lnpdf(x,s);pts.push([x,y]);if(y>ym) ym=y}return pts});
+  const X=x=>pad.l+x/xm*pw,Y=y=>pad.t+ph-y/ym*ph;
+  ctx.strokeStyle=TH.line;ctx.beginPath();ctx.moveTo(pad.l,pad.t+ph+.5);ctx.lineTo(w-pad.r,pad.t+ph+.5);ctx.stroke();
+  ctx.setLineDash([3,3]);ctx.strokeStyle=TH.muted;ctx.beginPath();ctx.moveTo(X(1)+.5,pad.t);ctx.lineTo(X(1)+.5,pad.t+ph);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=TH.muted;ctx.textAlign="center";ctx.textBaseline="top";[0,1,2,3].forEach(v=>ctx.fillText(String(v),X(v),pad.t+ph+5));
+  curves.forEach((c,k)=>{ctx.strokeStyle=TH.l[k];ctx.lineWidth=k===0?2.6:1.8;ctx.beginPath();c.forEach((p,i)=>{i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1]))});ctx.stroke()});
+  $("#fig1Legend").innerHTML=SIG.map((s,k)=>`<span><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="var(--l${k+1})" stroke-width="${k===0?2.6:1.8}"/></svg>σ = ${s}${k===0?" (least skewed)":k===2?" (most skewed)":""}</span>`).join("")+`<span>performance →</span>`}
+
+/* ---------- Part 2 ---------- */
+const W={sim:null,C:20,seed:4242,playing:false,raf:0,deg:[],cl:[],bigT:[],profits:[],innov:0,tot:null,trail:null,flash:null,lastEv:null,B:null,K:null};
+function resetIndustry(){W.sim=createIndustry(W.C,W.seed);W.deg=[];W.cl=[];W.bigT=[];W.profits=[];W.innov=0;W.tot=new Float64Array(100);W.trail=null;W.flash=null;W.lastEv=null;
+  for(let t=0;t<300;t++) stepOnce(true); measure();drawIndustry();updateStats();
+  $("#event").className="event";$("#event").textContent=`Industry started 300 periods ago with C = ${W.C}. Press Play to continue.`}
+function stepOnce(silent){
+  const s=W.sim,ox=Float64Array.from(s.x),oy=Float64Array.from(s.y),ev=s.step();
+  W.deg.push(s.deg.reduce((a,b)=>a+b,0)/s.N);W.cl.push(clustering(s.nb));if(W.deg.length>500){W.deg.shift();W.cl.shift()}
+  W.bigT=W.bigT.map(t=>t-0).filter(t=>t>s.t-500);
+  if(ev){W.innov++;W.profits.push(ev.profit);W.tot[ev.i]+=ev.V;if(ev.big) W.bigT.push(s.t);
+    if(!silent){W.trail={ox,oy,ttl:ev.big?26:10,big:ev.big};W.flash={i:ev.i,ttl:ev.big?30:12,big:ev.big}}W.lastEv={...ev,t:s.t}}
+  return ev;
+}
+function measure(){W.B=betweenness(W.sim.nb);W.K=constraint(W.sim.nb)}
+function comps(nb){const N=nb.length,seen=new Uint8Array(N);let c=0;for(let i=0;i<N;i++){if(seen[i]||!nb[i].length) continue;c++;const q=[i];seen[i]=1;while(q.length){const u=q.pop();for(const v of nb[u]) if(!seen[v]){seen[v]=1;q.push(v)}}}return c}
+function updateStats(){const s=W.sim,n=W.deg.length;
+  $("#sT").textContent=s.t.toLocaleString();$("#sDeg").textContent=W.deg[n-1].toFixed(2);$("#sCl").textContent=W.cl[n-1].toFixed(2);
+  $("#sComp").innerHTML=comps(s.nb)+` <small>+${s.deg.filter(d=>d===0).length} isolates</small>`;
+  $("#sRate").textContent=(W.innov/s.t).toFixed(2);const sk=skewness(W.profits);$("#sSkew").textContent=isFinite(sk)?sk.toFixed(2):"–";
+  const e=W.lastEv;
+  if(e){const ago=s.t-e.t;$("#event").className="event"+(e.big&&ago<40?" bigev":"");
+    $("#event").innerHTML=`${ago===0?"This period":ago+" period"+(ago>1?"s":"")+" ago"}: firm ${e.i+1} innovated, size <b>${e.theta.toFixed(2)}</b>${e.big?" (large)":" (small)"}, displacing others by a total of <b>${e.V.toFixed(2)}</b>.`}
+}
+function drawIndustry(){
+  const cv=$("#torus"),{ctx,w}=setup(cv),s=W.sim,N=s.N,S=w,P=v=>v*S;
+  // edges with torus wrapping
+  ctx.strokeStyle=TH.edge;ctx.globalAlpha=.55;ctx.lineWidth=1;ctx.beginPath();
+  for(let i=0;i<N;i++) for(const j of s.nb[i]){if(j<i) continue;const dx=torusDelta(s.x[i],s.x[j]),dy=torusDelta(s.y[i],s.y[j]);
+    ctx.moveTo(P(s.x[i]),P(s.y[i]));ctx.lineTo(P(s.x[i]+dx),P(s.y[i]+dy));
+    if(Math.abs(s.x[j]-s.x[i])>.5||Math.abs(s.y[j]-s.y[i])>.5){ctx.moveTo(P(s.x[j]),P(s.y[j]));ctx.lineTo(P(s.x[j]-dx),P(s.y[j]-dy))}}
+  ctx.stroke();ctx.globalAlpha=1;
+  // dislocation trails
+  if(W.trail&&W.trail.ttl>0){const t=W.trail;ctx.strokeStyle=t.big?TH.big:TH.muted;ctx.globalAlpha=Math.min(.7,t.ttl/14);ctx.lineWidth=1;ctx.beginPath();
+    for(let j=0;j<N;j++){const dx=torusDelta(t.ox[j],s.x[j]),dy=torusDelta(t.oy[j],s.y[j]);if(Math.hypot(dx,dy)<.004) continue;ctx.moveTo(P(s.x[j]-dx),P(s.y[j]-dy));ctx.lineTo(P(s.x[j]),P(s.y[j]))}
+    ctx.stroke();ctx.globalAlpha=1}
+  // firms
+  const by=$("#colorBy").value;let vals,mx=0,mn=Infinity;
+  if(by==="bet") vals=W.B;else if(by==="con") vals=W.K;else vals=W.tot;
+  for(const v of vals) if(isFinite(v)){if(v>mx)mx=v;if(v<mn)mn=v}
+  const rad=Math.max(3,S/130);
+  for(let i=0;i<N;i++){const v=vals[i];ctx.fillStyle=isFinite(v)?ramp(mx>mn?(v-mn)/(mx-mn):0):TH.surface;ctx.strokeStyle=TH.ink;ctx.lineWidth=.8;
+    ctx.beginPath();ctx.arc(P(s.x[i]),P(s.y[i]),rad,0,7);ctx.fill();ctx.stroke()}
+  if(W.flash&&W.flash.ttl>0){const f=W.flash,i=f.i;ctx.strokeStyle=TH.big;ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(P(s.x[i]),P(s.y[i]),rad+(f.big?26:8)*(1-f.ttl/(f.big?30:12))+4,0,7);ctx.stroke()}
+}
+function drawTS(cv,arr,lo,hi){const {ctx,w,h}=setup(cv),pad={l:34,r:8,t:6,b:16},s=W.sim;
+  let mn=Math.min(...arr),mx=Math.max(...arr);if(mx-mn<1e-6){mn-=.05;mx+=.05}const pd=(mx-mn)*.1;mn-=pd;mx+=pd;
+  const t0=s.t-arr.length+1,{X,Y}=axes(ctx,w,h,pad,Math.max(0,s.t-499),Math.max(500,s.t),mn,mx,"",v=>v.toFixed(nice(mx-mn,3)<.1?2:1));
+  ctx.strokeStyle=TH.big;ctx.lineWidth=1.5;for(const t of W.bigT){const x=Math.round(X(t))+.5;ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+7);ctx.stroke()}
+  ctx.strokeStyle=TH.accent;ctx.lineWidth=1.6;ctx.beginPath();arr.forEach((v,k)=>{const x=X(t0+k),y=Y(v);k?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}
+function frame(){if(!W.playing) return;const n=+$("#speed").value;for(let k=0;k<n;k++) stepOnce(false);
+  if(W.trail) W.trail.ttl--;if(W.flash) W.flash.ttl--;measure();drawIndustry();drawTS($("#cDeg"),W.deg);drawTS($("#cCl"),W.cl);updateStats();W.raf=requestAnimationFrame(frame)}
+function play(){W.playing=!W.playing;$("#play").textContent=W.playing?"Pause":"Play";if(W.playing) W.raf=requestAnimationFrame(frame);else cancelAnimationFrame(W.raf)}
+function setC(c){W.C=c;$("#inC").value=c;const {H,L,pH}=innovationSizes(c);
+  $("#cVal").textContent=`= ${c} · H = ${H.toFixed(2)} with p = ${pH.toFixed(3)}, otherwise L = ${L.toFixed(2)}`;
+  document.querySelectorAll("[data-c]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.c===c))}
+
+/* ---------- Part 3 ---------- */
+const S3={pts:PRE.map(p=>Object.assign({pre:true},p)),m:"B",worker:null,running:false};
+function slopeTag(b,want){if(b===null) return '<span class="tag flat">–</span>';const se=b.se,t=b.b/(se||1e-9),dir=Math.abs(t)<1.5?"flat":b.b>0?"up":"down";
+  const txt=dir==="flat"?"no clear trend":dir==="up"?"rises with skew":"falls with skew";const cls=dir==="flat"?"flat":dir===want?"ok":"no";
+  return `<span class="tag ${cls}">${txt}</span> <span class="val">slope ${b.b>=0?"+":""}${b.b.toFixed(3)}</span>`}
+function fitSE(pts,k){const ok=pts.filter(p=>isFinite(p[k])&&isFinite(p.skew)),xs=ok.map(p=>p.skew),ys=ok.map(p=>p[k]),f=ols(xs,ys);if(!f) return null;
+  const n=xs.length,mx=xs.reduce((a,b)=>a+b)/n;let sse=0,sxx=0;for(let i=0;i<n;i++){sse+=(ys[i]-f.a-f.b*xs[i])**2;sxx+=(xs[i]-mx)**2}return{b:f.b,se:Math.sqrt(sse/(n-2)/sxx),mean:f.my}}
+function drawS3(){
+  const m=S3.m,name=m==="B"?"betweenness":"constraint";
+  $("#mainTitle").textContent=`Correlation of ${name} with profit, by skewness of profits`;
+  $("#varTitle").textContent=`Correlation of firm profit variance with ${name}`;
+  scatterTwo($("#cMain"),S3.pts,"cs"+m,"st"+m);
+  scatterTwo($("#cVar"),S3.pts.map(p=>({skew:p.skew,v:p["v"+m]})),null,"v",{smooth:true});
+  const pre=S3.pts.filter(p=>p.pre).length,own=S3.pts.length-pre;
+  $("#nRuns").textContent=`${S3.pts.length} runs`+(pre?` (${pre} pre-run${own?`, ${own} yours`:""})`:"");
+  const rows=[["Open","Betweenness","B","up","down","Raises variance"],["Closed","Constraint","K","down","up","Lowers variance"]];
+  $("#tbl1").innerHTML=`<thead><tr><th>Position</th><th>Paper’s prediction, cross-section</th><th>This sweep</th><th>Paper’s prediction, strategy</th><th>This sweep</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td><b>${r[0]}</b><br><span class="hint">${r[1]}</span></td><td>${r[3]==="up"?"Increases":"Decreases"} with skew</td><td>${slopeTag(fitSE(S3.pts,"cs"+r[2]),r[3])}</td><td>${r[4]==="up"?"Increases":"Decreases"} with skew</td><td>${slopeTag(fitSE(S3.pts,"st"+r[2]),r[4])}</td></tr>`).join("")+"</tbody>";
+}
+function makeWorker(){
+  const src=$("#core").textContent+`
+self.onmessage=function(e){const {runs,T,seed}=e.data;const r=mulberry32(seed);
+  for(let k=0;k<runs;k++){const C=2+28*r();const res=fullRun(C,Math.floor(r()*1e9),T,500,10);
+    postMessage({k,res:{C:res.C,skew:res.skew,csB:res.csB,stB:res.stB,csK:res.csK,stK:res.stK,vB:res.vB,vK:res.vK}})}
+  postMessage({done:true})};`;
+  return new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})));
+}
+function runSweep(){
+  if(S3.running){stopSweep("Stopped.");return}
+  const runs=+$("#inRuns").value,T=+$("#inT").value;
+  try{S3.worker=makeWorker()}catch(e){$("#runHint").textContent="This browser blocked the background worker, so new runs can’t be added here. The pre-run sample is still shown.";return}
+  S3.running=true;$("#runBtn").textContent="Stop";$("#prog").style.visibility="visible";const bar=$("#prog").firstElementChild;bar.style.width="0%";
+  const est=Math.round(runs*T/4000*0.9);$("#runHint").textContent=`Running ${runs} industries of ${T.toLocaleString()} periods. Roughly ${est<60?est+" seconds":Math.round(est/60)+" minutes"} on a laptop; dots appear as each run finishes.`;
+  S3.worker.onmessage=e=>{const d=e.data;if(d.done){stopSweep(`Added ${runs} runs.`);return}
+    S3.pts.push(d.res);bar.style.width=((d.k+1)/runs*100)+"%";drawS3()};
+  S3.worker.postMessage({runs,T,seed:Math.floor(Math.random()*1e9)});
+}
+function stopSweep(msg){if(S3.worker){S3.worker.terminate();S3.worker=null}S3.running=false;$("#runBtn").textContent="Run";$("#prog").style.visibility="hidden";$("#runHint").textContent=msg}
+
+/* ---------- events ---------- */
+$("#toyRerun").addEventListener("click",runToy);
+$("#inC").addEventListener("input",e=>{setC(+e.target.value)});
+$("#inC").addEventListener("change",()=>{resetIndustry()});
+document.querySelectorAll("[data-c]").forEach(b=>b.addEventListener("click",()=>{setC(+b.dataset.c);resetIndustry()}));
+$("#play").addEventListener("click",play);
+$("#reset").addEventListener("click",()=>{W.seed=Math.floor(Math.random()*1e9);resetIndustry()});
+$("#colorBy").addEventListener("change",e=>{$("#rampLbl").textContent=e.target.value==="bet"?"low → high betweenness":e.target.value==="con"?"low → high constraint (isolates hollow)":"low → high total profit";drawIndustry()});
+$("#measure").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b) return;S3.m=b.dataset.m;document.querySelectorAll("#measure button").forEach(x=>x.setAttribute("aria-pressed",x===b));drawS3()});
+$("#runBtn").addEventListener("click",runSweep);
+$("#clearBtn").addEventListener("click",()=>{stopSweep("Cleared. Press Run to start a fresh sweep.");S3.pts=[];drawS3()});
+function redrawAll(){drawToy();drawFig1();drawIndustry();drawTS($("#cDeg"),W.deg);drawTS($("#cCl"),W.cl);drawS3()}
+let rz;new ResizeObserver(()=>{clearTimeout(rz);rz=setTimeout(redrawAll,80)}).observe(document.body);
+const reTheme=()=>{readTheme();redrawAll()};
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",reTheme)}catch(e){}
+new MutationObserver(reTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+/* ---------- boot ---------- */
+readTheme();runToy();drawFig1();setC(20);resetIndustry();drawTS($("#cDeg"),W.deg);drawTS($("#cCl"),W.cl);drawS3();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redrawAll);
+})();
+</script>
+
+</body></html>
